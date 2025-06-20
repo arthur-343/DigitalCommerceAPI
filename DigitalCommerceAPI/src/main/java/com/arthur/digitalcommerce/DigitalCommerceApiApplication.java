@@ -1,4 +1,4 @@
-package com.arthur.digitalcommerce.digitalcommerceapi;
+package com.arthur.digitalcommerce;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,5 +9,4 @@ public class DigitalCommerceApiApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(DigitalCommerceApiApplication.class, args);
 	}
-
 }
