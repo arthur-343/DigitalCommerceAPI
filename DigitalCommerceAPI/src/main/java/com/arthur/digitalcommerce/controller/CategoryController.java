@@ -2,13 +2,15 @@ package com.arthur.digitalcommerce.controller;
 
 import com.arthur.digitalcommerce.model.Category;
 import com.arthur.digitalcommerce.service.CategoryService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/categories")
+@RequestMapping("/api/categories")
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -23,40 +25,27 @@ public class CategoryController {
         return ResponseEntity.ok(categories);
     }
 
-    @PostMapping
-    public ResponseEntity<Category> addCategory(@RequestBody Category newCategory) {
-        Category created = categoryService.addCategory(newCategory);
-        return ResponseEntity.status(201).body(created); // 201 Created
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
         Category category = categoryService.getCategoryById(id);
-        if (category != null) {
-            return ResponseEntity.ok(category);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(category);
+    }
+
+    @PostMapping
+    public ResponseEntity<Category> addCategory(@Valid @RequestBody Category category) {
+        Category savedCategory = categoryService.addCategory(category);
+        return new ResponseEntity<>(savedCategory, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody Category updatedCategory) {
-        Category updated = categoryService.updateCategory(id, updatedCategory);
-        if (updated != null) {
-            return ResponseEntity.ok(updated);
-        } else {
-            return ResponseEntity.status(404).build();
-        }
+    public ResponseEntity<Category> updateCategory(@PathVariable Long id, @Valid @RequestBody Category category) {
+        Category updatedCategory = categoryService.updateCategory(id, category);
+        return ResponseEntity.ok(updatedCategory);
     }
-
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
-        boolean deleted = categoryService.deleteCategoryById(id);
-        if (deleted) {
-            return ResponseEntity.ok("Categoria com ID " + id + " deletada com sucesso.");
-        } else {
-            return ResponseEntity.status(404).body("Categoria com ID " + id + " não encontrada.");
-        }
+        categoryService.deleteCategoryById(id);
+        return ResponseEntity.ok("Categoria deletada com sucesso.");
     }
 }
