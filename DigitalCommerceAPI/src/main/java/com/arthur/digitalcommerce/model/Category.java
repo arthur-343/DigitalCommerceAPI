@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Entity
 @Table(name = "categories")
@@ -19,7 +20,13 @@ public class Category {
     private Long categoryId;
 
     @Column(nullable = false, unique = true)
+
     @NotBlank(message = "Category name is required")
+
     @Size(min = 3, max = 50, message = "Category name must be between 3 and 50 characters")
+
     private String categoryName;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    private List<Product> products;
 }
