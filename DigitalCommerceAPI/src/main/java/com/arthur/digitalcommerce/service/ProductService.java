@@ -18,8 +18,11 @@ public interface ProductService {
 
     ProductDTO updateProduct(Long productId,ProductDTO productDTO);
 
-    void deleteProductById(Long id);
+    ProductDTO deleteProduct(Long productId);
 
     ProductDTO updateProductImage(Long productId, MultipartFile image) throws IOException;
 
+    ProductResponse searchByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
+
+    ProductResponse searchProductByKeyword(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 }

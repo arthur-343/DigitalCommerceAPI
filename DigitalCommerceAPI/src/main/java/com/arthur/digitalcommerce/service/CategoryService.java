@@ -4,14 +4,10 @@ import com.arthur.digitalcommerce.payload.CategoryDTO;
 import com.arthur.digitalcommerce.payload.CategoryResponse;
 
 public interface CategoryService {
+    CategoryResponse getAllCategories(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
+    CategoryDTO createCategory(CategoryDTO categoryDTO);
 
-    CategoryResponse getAllCategories(int page, int size, String sortBy, String sortDir);
+    CategoryDTO deleteCategory(Long categoryId);
 
-    CategoryDTO getCategoryById(Long id);
-
-    CategoryDTO addCategory(CategoryDTO categoryDTO);
-
-    CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO);
-
-    void deleteCategoryById(Long id);
+    CategoryDTO updateCategory(CategoryDTO categoryDTO, Long categoryId);
 }

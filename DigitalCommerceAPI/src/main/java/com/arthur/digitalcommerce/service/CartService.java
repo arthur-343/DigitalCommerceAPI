@@ -1,0 +1,25 @@
+package com.arthur.digitalcommerce.service;
+
+import com.arthur.digitalcommerce.model.Cart;
+import com.arthur.digitalcommerce.payload.CartDTO;
+import jakarta.transaction.Transactional;
+
+import java.util.List;
+
+public interface CartService {
+
+    CartDTO addProductToCart( Long productId, Integer quantity);
+
+    List<CartDTO> getAllCarts();
+
+    CartDTO getLoggedInUserCart();
+
+    @Transactional
+    CartDTO updateProductQuantityInCart(Long productId, Integer quantity);
+
+    String deleteProductFromCart(Long cartId, Long productId);
+
+    void updateProductInCarts(Long cartId, Long productId);
+
+
+}
