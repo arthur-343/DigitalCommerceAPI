@@ -1,5 +1,8 @@
 package com.arthur.digitalcommerce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -42,12 +45,13 @@ public class Address {
     private String country;
 
     @NotBlank
-    @Size(min = 6, message = "Pincode must be atleast 6 characters")
+    @Size(min = 5, message = "cep must be atleast 5 characters")
     private String cep;
 
-    @ToString.Exclude
-    @ManyToMany(mappedBy = "addresses")
-    private List<User> users = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
 
     public Address(String street, String buildingName, String city, String state, String country, String cep) {
         this.street = street;

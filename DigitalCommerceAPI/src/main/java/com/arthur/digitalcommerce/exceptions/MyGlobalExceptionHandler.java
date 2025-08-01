@@ -1,6 +1,8 @@
 package com.arthur.digitalcommerce.exceptions;
 
 import com.arthur.digitalcommerce.payload.APIResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,29 +16,45 @@ import java.util.Map;
 @RestControllerAdvice
 public class MyGlobalExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(MyGlobalExceptionHandler.class);
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> myMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException e) {
         Map<String, String> response = new HashMap<>();
         e.getBindingResult().getAllErrors().forEach(err -> {
-            String fieldName = ((FieldError) err).getField();
+            String field = ((FieldError) err).getField();
             String message = err.getDefaultMessage();
-            response.put(fieldName, message);
+            response.put(field, message);
         });
-        return new ResponseEntity<Map<String, String>>(response,
-                HttpStatus.BAD_REQUEST);
+
+        logger.warn("Validation failed: {}", response);
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<APIResponse> myResourceNotFoundException(ResourceNotFoundException e) {
-        String message = e.getMessage();
-        APIResponse apiResponse = new APIResponse(message, false);
-        return new ResponseEntity<>(apiResponse, HttpStatus.NOT_FOUND);
+    public ResponseEntity<APIResponse> handleResourceNotFound(ResourceNotFoundException e) {
+        logger.warn("Resource not found: {}", e.getMessage());
+        APIResponse apiResponse = new APIResponse(e.getMessage(), false);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiResponse);
     }
 
     @ExceptionHandler(APIException.class)
-    public ResponseEntity<APIResponse> myAPIException(APIException e) {
-        String message = e.getMessage();
-        APIResponse apiResponse = new APIResponse(message, false);
-        return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<APIResponse> handleAPIException(APIException e) {
+        logger.error("API exception: {}", e.getMessage());
+        APIResponse apiResponse = new APIResponse(e.getMessage(), false);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<APIResponse> handleGeneralException(Exception e) {
+        logger.error("Unexpected error: {}", e.getMessage(), e);
+        APIResponse response = new APIResponse("Internal server error occurred.", false);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<APIResponse> handleAccessDeniedException(AccessDeniedException e) {
+        APIResponse response = new APIResponse(e.getMessage(), false);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 }
