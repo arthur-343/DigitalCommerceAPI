@@ -101,8 +101,12 @@ public class CartServiceImpl implements CartService{
         List<CartDTO> cartDTOs = carts.stream().map(cart -> {
             CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
 
-            List<ProductDTO> products = cart.getCartItems().stream()
-                    .map(p -> modelMapper.map(p.getProduct(), ProductDTO.class)).collect(Collectors.toList());
+            List<ProductDTO> products = cart.getCartItems().stream().map(cartItem -> {
+                ProductDTO productDTO = modelMapper.map(cartItem.getProduct(), ProductDTO.class);
+                productDTO.setQuantity(cartItem.getQuantity()); // Set the quantity from CartItem
+                return productDTO;
+            }).collect(Collectors.toList());
+
 
             cartDTO.setProducts(products);
 
@@ -112,7 +116,6 @@ public class CartServiceImpl implements CartService{
 
         return cartDTOs;
     }
-
     @Override
     public CartDTO getCart(String emailId, Long cartId) {
         Cart cart = cartRepository.findCartByEmailAndCartId(emailId, cartId);
@@ -259,5 +262,26 @@ public class CartServiceImpl implements CartService{
 
         cartItem = cartItemRepository.save(cartItem);
     }
+
+    @Transactional
+    @Override
+    public String clearCart(Long cartId) {
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
+
+        if (cart.getCartItems().isEmpty()) {
+            throw new APIException("Cart is already empty");
+        }
+
+        cartItemRepository.deleteAll(cart.getCartItems());
+
+
+        cart.setTotalPrice(0.0);
+
+        cartRepository.save(cart);
+
+        return "Cart cleared successfully!";
+    }
+
 
 }

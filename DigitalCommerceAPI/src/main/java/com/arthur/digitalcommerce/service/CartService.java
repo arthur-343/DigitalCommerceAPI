@@ -1,9 +1,7 @@
 package com.arthur.digitalcommerce.service;
 
-import com.arthur.digitalcommerce.model.Cart;
 import com.arthur.digitalcommerce.payload.CartDTO;
 import jakarta.transaction.Transactional;
-
 import java.util.List;
 
 public interface CartService {
@@ -19,4 +17,7 @@ public interface CartService {
     String deleteProductFromCart(Long cartId, Long productId);
 
     void updateProductInCarts(Long cartId, Long productId);
+
+    @Transactional
+    String clearCart(Long cartId);
 }
