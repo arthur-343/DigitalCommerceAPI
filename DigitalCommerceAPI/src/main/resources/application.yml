@@ -4,9 +4,9 @@ spring:
     active: local
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/ecommerce
-    username: arthur
-    password: arthur22
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -18,15 +18,15 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   app:
-    jwtSecret: "5bLhV6mXz4Jg8qT9hRkYpFnP2wS1tEa7uI0oO3xZ8cW6vB4nD2rE1qU0sA5gF9y"
-    jwtExpirationMs: 3000000
+    jwtSecret: ${JWT_SECRET}
+    jwtExpirationMs: ${JWT_EXPIRATION_MS}
   ecom:
     app:
-      jwtCookieName: "springBootEcom"
+      jwtCookieName: ${JWT_COOKIE_NAME}
 
   project:
-    image:  ${user.dir}/uploads/images
+    image:  ${PROJECT_IMAGE_PATH}
 
   mercadopago:
     access:
-      token: TEST-2159438317888101-080712-b2f98afee7652c6a011690824e20414a-327348351
+      token: ${MERCADOPAGO_ACCESS_TOKEN}
