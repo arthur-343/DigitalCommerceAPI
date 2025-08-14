@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      # Variáveis de ambiente para o Spring Boot
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ecommerce
+      DB_USERNAME: arthur
+      DB_PASSWORD: arthur22
+      DB_DRIVER: org.postgresql.Driver
+      JWT_SECRET: 5bLhV6mXz4Jg8qT9hRkYpFnP2wS1tEa7uI0oO3xZ8cW6vB4nD2rE1qU0sA5gF9y
+      MERCADOPAGO_ACCESS_TOKEN: TEST-2159438317888101-080712-b2f98afee7652c6a011690824e20414a-327348351
+
+      # Outras variáveis de configuração
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+
+  db:
+    image: postgres:14
+    container_name: postgres-db
+    environment:
+      # Variáveis de ambiente para o PostgreSQL
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: arthur
+      POSTGRES_PASSWORD: arthur22
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
