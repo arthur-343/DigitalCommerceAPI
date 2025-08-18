@@ -57,4 +57,9 @@ public class MyGlobalExceptionHandler {
         APIResponse response = new APIResponse(e.getMessage(), false);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
+
+    @ExceptionHandler(DataInitializationException.class)
+    public void handleDataInitializationException(DataInitializationException e) {
+        logger.error("faill on initiation: {}", e.getMessage(), e);
+    }
 }

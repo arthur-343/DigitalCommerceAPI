@@ -46,7 +46,7 @@ public class ProductServiceImpl implements ProductService{
     @Autowired
     private FileService fileService;
 
-    @Value("${spring.project.image}")
+    @Value("${project.image}")
     private String path;
 
     @Override

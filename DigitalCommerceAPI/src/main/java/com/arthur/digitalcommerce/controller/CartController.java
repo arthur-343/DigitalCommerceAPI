@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/carts")
 public class CartController {
 
     @Autowired
@@ -27,14 +27,14 @@ public class CartController {
     @Autowired
     private CartService cartService;
 
-    @PostMapping("/carts/products/{productId}/quantity/{quantity}")
+    @PostMapping("/products/{productId}/quantity/{quantity}")
     public ResponseEntity<CartDTO> addProductToCart(@PathVariable Long productId,
                                                     @PathVariable Integer quantity){
         CartDTO cartDTO = cartService.addProductToCart(productId, quantity);
         return new ResponseEntity<CartDTO>(cartDTO, HttpStatus.CREATED);
     }
 
-    @GetMapping("/carts")
+    @GetMapping("/all")
     public ResponseEntity<List<CartDTO>> getCarts() {
         List<CartDTO> cartDTOs = cartService.getAllCarts();
         return new ResponseEntity<List<CartDTO>>(cartDTOs, HttpStatus.FOUND);
@@ -59,7 +59,7 @@ public class CartController {
         return new ResponseEntity<CartDTO>(cartDTO, HttpStatus.OK);
     }
 
-    @DeleteMapping("/carts/{cartId}/product/{productId}")
+    @DeleteMapping("/cart/{cartId}/product/{productId}")
     public ResponseEntity<String> deleteProductFromCart(@PathVariable Long cartId,
                                                         @PathVariable Long productId) {
         String status = cartService.deleteProductFromCart(cartId, productId);

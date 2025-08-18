@@ -17,15 +17,18 @@ public class CategoryController {
     @Autowired
     private CategoryService categoryService;
 
-    @GetMapping("/public/categories")
-    public ResponseEntity<CategoryResponse> getAllCategories(
-            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
-            @RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
-            @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_CATEGORIES_BY, required = false) String sortBy,
-            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR, required = false) String sortOrder) {
-        CategoryResponse categoryResponse = categoryService.getAllCategories(pageNumber, pageSize, sortBy, sortOrder);
-        return new ResponseEntity<>(categoryResponse, HttpStatus.OK);
+    @GetMapping("/public/categories/paged")
+    public ResponseEntity<CategoryResponse> getAllCategoriesPaged(
+            @RequestParam(name = "page",      defaultValue = AppConstants.PAGE_NUMBER) Integer page,
+            @RequestParam(name = "size",      defaultValue = AppConstants.PAGE_SIZE)   Integer size,
+            @RequestParam(name = "sortBy",    defaultValue = AppConstants.SORT_CATEGORIES_BY) String sortBy,
+            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR)           String sortOrder) {
+
+        CategoryResponse categoryResponse =
+                categoryService.getAllCategories(page, size, sortBy, sortOrder);
+        return ResponseEntity.ok(categoryResponse);
     }
+
 
     @PostMapping("/public/categories")
     public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO){
