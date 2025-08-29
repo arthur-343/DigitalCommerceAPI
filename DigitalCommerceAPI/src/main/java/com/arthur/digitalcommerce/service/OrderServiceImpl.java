@@ -1,121 +1,92 @@
 package com.arthur.digitalcommerce.service;
 
-import com.arthur.digitalcommerce.exceptions.APIException;
-import com.arthur.digitalcommerce.exceptions.ResourceNotFoundException;
 import com.arthur.digitalcommerce.model.*;
-import com.arthur.digitalcommerce.payload.OrderDTO;
-import com.arthur.digitalcommerce.payload.OrderItemDTO;
-import com.arthur.digitalcommerce.payload.OrderRequestDTO;
-import com.arthur.digitalcommerce.payload.PaymentDTO;
-import com.arthur.digitalcommerce.repository.*;
+import com.arthur.digitalcommerce.payload.mercadopago.Payer;
+import com.arthur.digitalcommerce.payload.mercadopago.PixPaymentRequest;
+import com.arthur.digitalcommerce.payload.mercadopago.PixPaymentResponse;
+import com.arthur.digitalcommerce.repository.CartRepository;
+import com.arthur.digitalcommerce.repository.OrderItemRepository;
+import com.arthur.digitalcommerce.repository.OrderRepository;
 import com.arthur.digitalcommerce.util.AuthUtil;
-import jakarta.transaction.Transactional;
+import jakarta.servlet.http.HttpServletRequest;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
 
-    @Autowired
-    private CartRepository cartRepository;
+    //--- DEPENDÊNCIAS ---
+    @Autowired private CartRepository cartRepository;
+    @Autowired private OrderRepository orderRepository;
+    @Autowired private OrderItemRepository orderItemRepository;
+    @Autowired private ModelMapper modelMapper;
+    @Autowired private AuthUtil authUtil;
+    @Autowired private PaymentService paymentService;
+    @Autowired private PixService pixService; // <-- INJETA O NOVO SERVIÇO DE PIX
 
-    @Autowired
-    private AddressRepository addressRepository;
-
-    @Autowired
-    private OrderItemRepository orderItemRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private PaymentRepository paymentRepository;
-
-    @Autowired
-    private CartService cartService;
-
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private AuthUtil authUtil;
+    // Injetamos o token apenas para passá-lo para a requisição do PixService
+    @Value("${mercadopago.access.token}")
+    private String mercadopagoAccessToken;
 
     @Override
     @Transactional
-    public OrderDTO processOrder(String paymentMethod, OrderRequestDTO orderRequestDTO) {
-        String emailId = authUtil.loggedInEmail();
+    public PixPaymentResponse processOrderPayment(HttpServletRequest request) {
+        Order order = createOrderFromCart();
 
-        Cart cart = cartRepository.findCartByEmail(emailId);
-        if (cart == null) {
-            throw new ResourceNotFoundException("Cart", "email", emailId);
+        // 1. Prepara a requisição para o nosso PixService interno
+        PixPaymentRequest pixRequest = new PixPaymentRequest();
+        pixRequest.setAccessToken(this.mercadopagoAccessToken); // Passa o token
+        pixRequest.setTransactionAmount(order.getTotalAmount());
+        pixRequest.setDescription("Pagamento para o pedido #" + order.getOrderId());
+        pixRequest.setPayer(new Payer(authUtil.loggedInEmail()));
+
+        // 2. CHAMA DIRETAMENTE O SERVIÇO, SEM RESTTEMPLATE!
+        PixPaymentResponse pixResponse = pixService.createPixPayment(pixRequest);
+
+        // 3. Salva os detalhes do pagamento e retorna a resposta
+        paymentService.createPaymentFromResponse(order, pixResponse);
+
+        return pixResponse;
+    }
+
+    private Order createOrderFromCart() {
+        User user = authUtil.loggedInUser();
+        Cart userCart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Carrinho não encontrado para o usuário: " + user.getUserName()));
+
+        if (userCart.getCartItems().isEmpty()) {
+            throw new RuntimeException("O carrinho está vazio. Não é possível criar um pedido.");
         }
 
-        if (cart.getCartItems().isEmpty()) {
-            throw new APIException("Cart is empty");
-        }
+        Order newOrder = new Order();
+        newOrder.setTotalAmount(userCart.getTotalPrice());
+        newOrder.setEmail(user.getEmail());
+        newOrder.setOrderDate(LocalDate.now());
+        newOrder.setOrderStatus("PENDING_PAYMENT");
 
-        Address address = addressRepository.findById(orderRequestDTO.getAddressId())
-                .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", orderRequestDTO.getAddressId()));
+        List<OrderItem> orderItems = userCart.getCartItems().stream()
+                .map(cartItem -> {
+                    OrderItem orderItem = modelMapper.map(cartItem, OrderItem.class);
+                    orderItem.setOrder(newOrder);
+                    orderItem.setOrderedProductPrice(cartItem.getProductPrice());
+                    return orderItem;
+                }).collect(Collectors.toList());
 
-        // Criar pedido
-        Order order = new Order();
-        order.setEmail(emailId);
-        order.setOrderDate(LocalDate.now());
-        order.setTotalAmount(cart.getTotalPrice());
-        order.setOrderStatus("Order Accepted !");
-        order.setAddress(address);
-
-        // Criar pagamento inicial (status pendente)
-        Payment payment = new Payment();
-        payment.setPaymentMethod(paymentMethod);
-        payment.setPgPaymentId(orderRequestDTO.getPgPaymentId());
-        payment.setPgStatus("pending");
-        payment.setPgResponseMessage("Awaiting confirmation from payment gateway");
-        payment.setPgName(orderRequestDTO.getPgName());
-
-        payment.setOrder(order);
-        paymentRepository.save(payment);
-        order.setPayment(payment);
-
-        // Salvar pedido
-        Order savedOrder = orderRepository.save(order);
-
-        // Criar itens do pedido
-        List<OrderItem> orderItems = new ArrayList<>();
-        for (CartItem cartItem : cart.getCartItems()) {
-            OrderItem orderItem = new OrderItem();
-            orderItem.setProduct(cartItem.getProduct());
-            orderItem.setQuantity(cartItem.getQuantity());
-            orderItem.setDiscount(cartItem.getDiscount());
-            orderItem.setOrderedProductPrice(cartItem.getProductPrice());
-            orderItem.setOrder(savedOrder);
-            orderItems.add(orderItem);
-        }
-
+        newOrder.setOrderItems(orderItems);
+        Order savedOrder = orderRepository.save(newOrder);
         orderItemRepository.saveAll(orderItems);
 
-        // Atualizar estoque e limpar carrinho
-        for (CartItem item : cart.getCartItems()) {
-            Product product = item.getProduct();
-            product.setQuantity(product.getQuantity() - item.getQuantity());
-            productRepository.save(product);
-        }
-        cartService.clearCart(cart.getCartId());
+        userCart.getCartItems().clear();
+        userCart.setTotalPrice(java.math.BigDecimal.ZERO);
+        cartRepository.save(userCart);
 
-        // Montar OrderDTO
-        OrderDTO orderDTO = modelMapper.map(savedOrder, OrderDTO.class);
-        orderDTO.setAddressId(orderRequestDTO.getAddressId());
-        orderDTO.getOrderItems().clear();
-        orderItems.forEach(item -> orderDTO.getOrderItems().add(modelMapper.map(item, OrderItemDTO.class)));
-
-        return orderDTO;
+        return savedOrder;
     }
 }

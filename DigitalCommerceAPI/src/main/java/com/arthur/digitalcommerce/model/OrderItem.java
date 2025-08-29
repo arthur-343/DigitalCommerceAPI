@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal; // <-- Adicione a importação
+
 
 @Entity
 @Data
@@ -28,8 +30,11 @@ public class OrderItem {
     private Order order;
 
     private Integer quantity;
-    private double discount;
-    private double orderedProductPrice;
 
+    // DEPOIS:
+    @Column(precision = 10, scale = 2)
+    private BigDecimal discount;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal orderedProductPrice;
 }

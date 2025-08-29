@@ -16,12 +16,13 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal; // IMPORT NECESSÁRIO
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-public class CartServiceImpl implements CartService{
+public class CartServiceImpl implements CartService {
     @Autowired
     private CartRepository cartRepository;
 
@@ -39,7 +40,7 @@ public class CartServiceImpl implements CartService{
 
     @Override
     public CartDTO addProductToCart(Long productId, Integer quantity) {
-        Cart cart  = createCart();
+        Cart cart = createCart();
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
@@ -64,84 +65,68 @@ public class CartServiceImpl implements CartService{
         newCartItem.setProduct(product);
         newCartItem.setCart(cart);
         newCartItem.setQuantity(quantity);
-        newCartItem.setDiscount(product.getDiscount());
         newCartItem.setProductPrice(product.getSpecialPrice());
+        // CORREÇÃO: Removido pois 'discount' não existe mais em Product
+        // newCartItem.setDiscount(product.getDiscount());
+        newCartItem.setDiscount(BigDecimal.ZERO); // Ou defina um valor padrão
 
         cartItemRepository.save(newCartItem);
 
-        product.setQuantity(product.getQuantity());
+        // A quantidade do produto em estoque deve ser atualizada em um serviço de 'estoque' separado, não aqui.
+        // product.setQuantity(product.getQuantity());
 
-        cart.setTotalPrice(cart.getTotalPrice() + (product.getSpecialPrice() * quantity));
+        // CORREÇÃO: Cálculo com BigDecimal
+        BigDecimal quantityBD = BigDecimal.valueOf(quantity);
+        BigDecimal subtotal = product.getSpecialPrice().multiply(quantityBD);
+        cart.setTotalPrice(cart.getTotalPrice().add(subtotal));
 
         cartRepository.save(cart);
 
+        return mapCartToDTO(cart);
+    }
+
+    // Método auxiliar para evitar repetição de código
+    private CartDTO mapCartToDTO(Cart cart) {
         CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
-
-        List<CartItem> cartItems = cart.getCartItems();
-
-        Stream<ProductDTO> productStream = cartItems.stream().map(item -> {
-            ProductDTO map = modelMapper.map(item.getProduct(), ProductDTO.class);
-            map.setQuantity(item.getQuantity());
-            return map;
-        });
-
-        cartDTO.setProducts(productStream.toList());
-
+        List<ProductDTO> productDTOs = cart.getCartItems().stream().map(item -> {
+            ProductDTO productDTO = modelMapper.map(item.getProduct(), ProductDTO.class);
+            productDTO.setQuantity(item.getQuantity());
+            return productDTO;
+        }).collect(Collectors.toList());
+        cartDTO.setProducts(productDTOs);
         return cartDTO;
     }
+
 
     @Override
     public List<CartDTO> getAllCarts() {
         List<Cart> carts = cartRepository.findAll();
 
-        if (carts.size() == 0) {
+        if (carts.isEmpty()) {
             throw new APIException("No cart exists");
         }
 
-        List<CartDTO> cartDTOs = carts.stream().map(cart -> {
-            CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
-
-            List<ProductDTO> products = cart.getCartItems().stream().map(cartItem -> {
-                ProductDTO productDTO = modelMapper.map(cartItem.getProduct(), ProductDTO.class);
-                productDTO.setQuantity(cartItem.getQuantity()); // Set the quantity from CartItem
-                return productDTO;
-            }).collect(Collectors.toList());
-
-
-            cartDTO.setProducts(products);
-
-            return cartDTO;
-
-        }).collect(Collectors.toList());
-
-        return cartDTOs;
+        return carts.stream().map(this::mapCartToDTO).collect(Collectors.toList());
     }
+
     @Override
     public CartDTO getCart(String emailId, Long cartId) {
         Cart cart = cartRepository.findCartByEmailAndCartId(emailId, cartId);
-        if (cart == null){
+        if (cart == null) {
             throw new ResourceNotFoundException("Cart", "cartId", cartId);
         }
-        CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
-        cart.getCartItems().forEach(c ->
-                c.getProduct().setQuantity(c.getQuantity()));
-        List<ProductDTO> products = cart.getCartItems().stream()
-                .map(p -> modelMapper.map(p.getProduct(), ProductDTO.class))
-                .toList();
-        cartDTO.setProducts(products);
-        return cartDTO;
+        return mapCartToDTO(cart);
     }
 
     @Transactional
     @Override
     public CartDTO updateProductQuantityInCart(Long productId, Integer quantity) {
-
         String emailId = authUtil.loggedInEmail();
-        Cart userCart = cartRepository.findCartByEmail(emailId);
-        Long cartId  = userCart.getCartId();
-
-        Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
+        Cart cart = cartRepository.findCartByEmail(emailId);
+        if (cart == null) {
+            throw new ResourceNotFoundException("Cart", "email", emailId);
+        }
+        Long cartId = cart.getCartId();
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
@@ -161,61 +146,41 @@ public class CartServiceImpl implements CartService{
             throw new APIException("Product " + product.getProductName() + " not available in the cart!!!");
         }
 
-        // Calculate new quantity
-        int newQuantity = cartItem.getQuantity() + quantity;
+        cartItem.setQuantity(quantity);
 
-        // Validation to prevent negative quantities
-        if (newQuantity < 0) {
-            throw new APIException("The resulting quantity cannot be negative.");
+        // Recalcula o total do carrinho do zero para garantir consistência
+        recalculateCartTotal(cart);
+
+        cartItemRepository.save(cartItem);
+        cartRepository.save(cart);
+
+        return mapCartToDTO(cart);
+    }
+
+    // Método auxiliar para recalcular o total do carrinho
+    private void recalculateCartTotal(Cart cart) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (CartItem item : cart.getCartItems()) {
+            BigDecimal subtotal = item.getProductPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            total = total.add(subtotal);
         }
-
-        if (newQuantity == 0){
-            deleteProductFromCart(cartId, productId);
-        } else {
-            cartItem.setProductPrice(product.getSpecialPrice());
-            cartItem.setQuantity(cartItem.getQuantity() + quantity);
-            cartItem.setDiscount(product.getDiscount());
-            cart.setTotalPrice(cart.getTotalPrice() + (cartItem.getProductPrice() * quantity));
-            cartRepository.save(cart);
-        }
-
-        CartItem updatedItem = cartItemRepository.save(cartItem);
-        if(updatedItem.getQuantity() == 0){
-            cartItemRepository.deleteById(updatedItem.getCartItemId());
-        }
-
-
-        CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
-
-        List<CartItem> cartItems = cart.getCartItems();
-
-        Stream<ProductDTO> productStream = cartItems.stream().map(item -> {
-            ProductDTO prd = modelMapper.map(item.getProduct(), ProductDTO.class);
-            prd.setQuantity(item.getQuantity());
-            return prd;
-        });
-
-
-        cartDTO.setProducts(productStream.toList());
-
-        return cartDTO;
+        cart.setTotalPrice(total);
     }
 
 
     private Cart createCart() {
-        Cart userCart  = cartRepository.findCartByEmail(authUtil.loggedInEmail());
-        if(userCart != null){
+        Cart userCart = cartRepository.findCartByEmail(authUtil.loggedInEmail());
+        if (userCart != null) {
             return userCart;
         }
 
         Cart cart = new Cart();
-        cart.setTotalPrice(0.00);
+        // CORREÇÃO: Iniciar com BigDecimal.ZERO
+        cart.setTotalPrice(BigDecimal.ZERO);
         cart.setUser(authUtil.loggedInUser());
-        Cart newCart =  cartRepository.save(cart);
 
-        return newCart;
+        return cartRepository.save(cart);
     }
-
 
     @Transactional
     @Override
@@ -229,14 +194,15 @@ public class CartServiceImpl implements CartService{
             throw new ResourceNotFoundException("Product", "productId", productId);
         }
 
-        cart.setTotalPrice(cart.getTotalPrice() -
-                (cartItem.getProductPrice() * cartItem.getQuantity()));
+        // CORREÇÃO: Cálculo com BigDecimal
+        BigDecimal quantityBD = BigDecimal.valueOf(cartItem.getQuantity());
+        BigDecimal subtotal = cartItem.getProductPrice().multiply(quantityBD);
+        cart.setTotalPrice(cart.getTotalPrice().subtract(subtotal));
 
         cartItemRepository.deleteCartItemByProductIdAndCartId(cartId, productId);
 
         return "Product " + cartItem.getProduct().getProductName() + " removed from the cart !!!";
     }
-
 
     @Override
     public void updateProductInCarts(Long cartId, Long productId) {
@@ -252,15 +218,16 @@ public class CartServiceImpl implements CartService{
             throw new APIException("Product " + product.getProductName() + " not available in the cart!!!");
         }
 
-        double cartPrice = cart.getTotalPrice()
-                - (cartItem.getProductPrice() * cartItem.getQuantity());
+        // CORREÇÃO: Lógica de recálculo com BigDecimal
+        BigDecimal oldSubtotal = cartItem.getProductPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+        BigDecimal cartPriceWithoutOldItem = cart.getTotalPrice().subtract(oldSubtotal);
 
         cartItem.setProductPrice(product.getSpecialPrice());
 
-        cart.setTotalPrice(cartPrice
-                + (cartItem.getProductPrice() * cartItem.getQuantity()));
+        BigDecimal newSubtotal = cartItem.getProductPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+        cart.setTotalPrice(cartPriceWithoutOldItem.add(newSubtotal));
 
-        cartItem = cartItemRepository.save(cartItem);
+        cartItemRepository.save(cartItem);
     }
 
     @Transactional
@@ -275,13 +242,10 @@ public class CartServiceImpl implements CartService{
 
         cartItemRepository.deleteAll(cart.getCartItems());
 
-
-        cart.setTotalPrice(0.0);
+        cart.setTotalPrice(BigDecimal.ZERO);
 
         cartRepository.save(cart);
 
         return "Cart cleared successfully!";
     }
-
-
 }

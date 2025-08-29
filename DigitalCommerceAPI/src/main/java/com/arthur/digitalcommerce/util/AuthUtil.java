@@ -3,6 +3,7 @@ package com.arthur.digitalcommerce.util;
 import com.arthur.digitalcommerce.model.User;
 import com.arthur.digitalcommerce.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -37,6 +38,17 @@ public class AuthUtil {
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + authentication.getName()));
         return user;
 
+    }
+
+    public static String getJwtToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication instanceof UsernamePasswordAuthenticationToken) {
+            Object credentials = authentication.getCredentials();
+            if (credentials instanceof String) {
+                return (String) credentials;
+            }
+        }
+        return null;
     }
 
 

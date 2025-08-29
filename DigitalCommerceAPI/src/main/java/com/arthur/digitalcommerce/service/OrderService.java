@@ -1,8 +1,10 @@
 package com.arthur.digitalcommerce.service;
 
-import com.arthur.digitalcommerce.payload.OrderDTO;
-import com.arthur.digitalcommerce.payload.OrderRequestDTO;
+import com.arthur.digitalcommerce.payload.mercadopago.PixPaymentResponse;
+import jakarta.servlet.http.HttpServletRequest; // 1. Adicione esta importação
 
 public interface OrderService {
-    OrderDTO processOrder(String paymentMethod, OrderRequestDTO orderRequestDTO);
+
+
+    PixPaymentResponse processOrderPayment(HttpServletRequest request);
 }

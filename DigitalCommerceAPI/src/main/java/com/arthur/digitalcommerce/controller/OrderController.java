@@ -1,24 +1,24 @@
 package com.arthur.digitalcommerce.controller;
 
-import com.arthur.digitalcommerce.payload.OrderDTO;
-import com.arthur.digitalcommerce.payload.OrderRequestDTO;
+import com.arthur.digitalcommerce.payload.mercadopago.PixPaymentResponse;
 import com.arthur.digitalcommerce.service.OrderService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/orders")
 public class OrderController {
 
     @Autowired
     private OrderService orderService;
 
-    @PostMapping("/order/users/payments/{paymentMethod}")
-    public ResponseEntity<OrderDTO> orderProducts(@PathVariable String paymentMethod,
-                                                  @RequestBody OrderRequestDTO orderRequestDTO) {
-        OrderDTO order = orderService.processOrder(paymentMethod, orderRequestDTO);
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+    @PostMapping("/pay/pix")
+    public ResponseEntity<PixPaymentResponse> processOrderPayment(HttpServletRequest request) {
+        PixPaymentResponse pixResponse = orderService.processOrderPayment(request);
+        return ResponseEntity.ok(pixResponse);
     }
 }

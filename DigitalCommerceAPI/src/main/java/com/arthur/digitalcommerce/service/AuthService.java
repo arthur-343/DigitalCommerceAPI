@@ -12,9 +12,7 @@ import com.arthur.digitalcommerce.security.response.UserInfoResponse;
 import com.arthur.digitalcommerce.security.response.MessageResponse;
 import com.arthur.digitalcommerce.security.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -64,21 +62,22 @@ public class AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
+        // CORREÇÃO: Gera a string do token diretamente
+        String jwtToken = jwtUtils.generateTokenFromUsername(userDetails.getUsername());
+
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
+        // CORREÇÃO: Retorna a resposta com o token JWT no corpo do JSON
         UserInfoResponse response = new UserInfoResponse(
                 userDetails.getId(),
                 userDetails.getUsername(),
                 roles,
-                jwtCookie.toString()
+                jwtToken // O token vai aqui
         );
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-                .body(response);
+        return ResponseEntity.ok(response);
     }
 
     public ResponseEntity<?> registerUser(SignupRequest signUpRequest) {
@@ -151,9 +150,10 @@ public class AuthService {
     }
 
     public ResponseEntity<MessageResponse> signoutUser() {
-        ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new MessageResponse("You've been signed out!"));
+        // CORREÇÃO: A lógica de logout no backend não é mais necessária para JWTs stateless.
+        // O cliente (frontend) simplesmente descarta o token.
+        // Podemos manter um endpoint de signout que retorna uma mensagem de sucesso.
+        SecurityContextHolder.clearContext();
+        return ResponseEntity.ok(new MessageResponse("You've been signed out!"));
     }
 }

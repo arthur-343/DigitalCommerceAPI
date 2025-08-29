@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,8 @@ public class Order {
     @JoinColumn(name = "payment_id")
     private Payment payment;
 
-    private Double totalAmount;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal totalAmount;
     private String orderStatus;
 
     // Reference to Address

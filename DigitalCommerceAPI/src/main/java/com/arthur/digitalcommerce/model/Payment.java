@@ -25,7 +25,7 @@ public class Payment {
     private Order order;
 
     @NotBlank
-    @Size(min = 4, message = "Payment method must contain at least 4 characters")
+    @Size(min = 3, message = "Payment method must contain at least 4 characters")
     private String paymentMethod; // PIX, CARD, BOLETO
 
     private String pgPaymentId;       // ID no provedor

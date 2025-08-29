@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal; // IMPORT NECESSÁRIO
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -91,14 +92,27 @@ public class ProductServiceImpl implements ProductService{
         }
 
         if (isProductNotPresent) {
-        Product product = modelMapper.map(productDTO, Product.class);
-        product.setCategory(category);
-        double specialPrice = product.getPrice() - ((product.getDiscount() * 0.01) * product.getPrice());
-        product.setSpecialPrice(specialPrice);
-        product.setImage("default.png");
-        Product savedProduct = productRepository.save(product);
+            Product product = modelMapper.map(productDTO, Product.class);
+            product.setCategory(category);
+            product.setImage("default.png");
 
-        return modelMapper.map(savedProduct, ProductDTO.class);
+            // CORREÇÃO 1: Lógica de cálculo com BigDecimal
+            BigDecimal price = product.getPrice();
+            BigDecimal discountPercent = productDTO.getDiscount();
+
+            if (price != null && discountPercent != null) {
+                BigDecimal discountMultiplier = discountPercent.divide(new BigDecimal("100"));
+                BigDecimal discountAmount = price.multiply(discountMultiplier);
+                BigDecimal specialPrice = price.subtract(discountAmount);
+
+                product.setSpecialPrice(specialPrice);
+            } else {
+                product.setSpecialPrice(price);
+            }
+
+            Product savedProduct = productRepository.save(product);
+
+            return modelMapper.map(savedProduct, ProductDTO.class);
 
         } else {
             throw new APIException("Product already exist!!");
@@ -175,14 +189,25 @@ public class ProductServiceImpl implements ProductService{
         Product productFromDb = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
-        Product product = modelMapper.map(productDTO, Product.class);
+        productFromDb.setProductName(productDTO.getProductName());
+        productFromDb.setDescription(productDTO.getDescription());
+        productFromDb.setQuantity(productDTO.getQuantity());
 
-        productFromDb.setProductName(product.getProductName());
-        productFromDb.setDescription(product.getDescription());
-        productFromDb.setQuantity(product.getQuantity());
-        productFromDb.setDiscount(product.getDiscount());
-        productFromDb.setPrice(product.getPrice());
-        productFromDb.setSpecialPrice(product.getSpecialPrice());
+        // CORREÇÃO 2: Remove a linha de 'setDiscount' e recalcula o 'specialPrice'
+        productFromDb.setPrice(productDTO.getPrice());
+
+        BigDecimal price = productDTO.getPrice();
+        BigDecimal discountPercent = productDTO.getDiscount();
+
+        if (price != null && discountPercent != null) {
+            BigDecimal discountMultiplier = discountPercent.divide(new BigDecimal("100"));
+            BigDecimal discountAmount = price.multiply(discountMultiplier);
+            BigDecimal specialPrice = price.subtract(discountAmount);
+
+            productFromDb.setSpecialPrice(specialPrice);
+        } else {
+            productFromDb.setSpecialPrice(price);
+        }
 
         Product savedProduct = productRepository.save(productFromDb);
 
@@ -292,8 +317,4 @@ public class ProductServiceImpl implements ProductService{
         productResponse.setLastPage(pageProducts.isLast());
         return productResponse;
     }
-
-
-
-
 }
