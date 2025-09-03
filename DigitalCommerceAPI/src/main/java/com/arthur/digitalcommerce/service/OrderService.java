@@ -1,10 +1,7 @@
 package com.arthur.digitalcommerce.service;
 
-import com.arthur.digitalcommerce.payload.mercadopago.PixPaymentResponse;
-import jakarta.servlet.http.HttpServletRequest; // 1. Adicione esta importação
+import com.mercadopago.resources.preference.Preference;
 
 public interface OrderService {
-
-
-    PixPaymentResponse processOrderPayment(HttpServletRequest request);
+    Preference createPaymentPreference();
 }

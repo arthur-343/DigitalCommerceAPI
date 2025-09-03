@@ -44,6 +44,7 @@ public class AuthService {
     private PasswordEncoder encoder;
 
     public ResponseEntity<?> authenticateUser(LoginRequest loginRequest) {
+        // Nenhuma alteração necessária aqui
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
@@ -62,19 +63,17 @@ public class AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        // CORREÇÃO: Gera a string do token diretamente
         String jwtToken = jwtUtils.generateTokenFromUsername(userDetails.getUsername());
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
-        // CORREÇÃO: Retorna a resposta com o token JWT no corpo do JSON
         UserInfoResponse response = new UserInfoResponse(
                 userDetails.getId(),
                 userDetails.getUsername(),
                 roles,
-                jwtToken // O token vai aqui
+                jwtToken
         );
 
         return ResponseEntity.ok(response);
@@ -89,12 +88,27 @@ public class AuthService {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
         }
 
+        /**
+         * ---- NOVA VALIDAÇÃO ADICIONADA ----
+         * Verificamos se o CPF já existe no banco de dados.
+         */
+        if (userRepository.existsByCpf(signUpRequest.getCpf())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: CPF is already in use!"));
+        }
+
+
+        /**
+         * ---- CRIAÇÃO DO USUÁRIO ATUALIZADA ----
+         * Agora passamos o CPF para o construtor da entidade User.
+         */
         User user = new User(
                 signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
-                encoder.encode(signUpRequest.getPassword())
+                encoder.encode(signUpRequest.getPassword()),
+                signUpRequest.getCpf() // <-- CPF é incluído aqui
         );
 
+        // O resto da lógica para atribuir roles permanece a mesma
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
 
@@ -129,6 +143,7 @@ public class AuthService {
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 
+    // Nenhuma alteração necessária nos métodos abaixo
     public String getCurrentUserName(Authentication authentication) {
         return authentication != null ? authentication.getName() : "";
     }
@@ -150,9 +165,6 @@ public class AuthService {
     }
 
     public ResponseEntity<MessageResponse> signoutUser() {
-        // CORREÇÃO: A lógica de logout no backend não é mais necessária para JWTs stateless.
-        // O cliente (frontend) simplesmente descarta o token.
-        // Podemos manter um endpoint de signout que retorna uma mensagem de sucesso.
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok(new MessageResponse("You've been signed out!"));
     }

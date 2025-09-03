@@ -47,7 +47,7 @@ public class ProductServiceImpl implements ProductService{
     @Autowired
     private FileService fileService;
 
-    @Value("${project.image}")
+    @Value("${config.paths.image-upload}")
     private String path;
 
     @Override

@@ -26,21 +26,15 @@ public class Payment {
 
     @NotBlank
     @Size(min = 3, message = "Payment method must contain at least 4 characters")
-    private String paymentMethod; // PIX, CARD, BOLETO
+    private String paymentMethod; // Ex: "credit_card"
 
-    private String pgPaymentId;       // ID no provedor
-    private String pgStatus;          // approved, pending, rejected
-    private String pgStatusDetail;    // Detalhe: accredited, pending_contingency
-    private String pgResponseMessage; // Mensagem do PSP
-    private String pgName;            // Nome do provedor (ex.: MercadoPago)
+    private String pgPaymentId;
+    private String pgStatus;
+    private String pgStatusDetail;
+    private String pgResponseMessage;
+    private String pgName;
 
-    private BigDecimal amount;        // Valor do pagamento
+    private BigDecimal amount;
 
-    private String transactionId;     // TxId ou referência
-    @Column(columnDefinition = "TEXT")
-    private String qrCode;            // Código EMV
-    @Column(columnDefinition = "TEXT")
-    private String qrCodeBase64;      // Imagem do QR Code
-
-    private LocalDateTime confirmedAt; // Quando foi aprovado
+    private LocalDateTime confirmedAt;
 }

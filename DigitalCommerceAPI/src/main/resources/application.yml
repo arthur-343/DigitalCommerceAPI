@@ -1,4 +1,3 @@
-# src/main/resources/application-local.yml
 spring:
   datasource:
     url: ${DB_URL}
@@ -6,30 +5,32 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: true
-    properties:
+    # Apenas para o perfil 'local', queremos ver os comandos SQL
+    jpa:
+      show-sql: true
       hibernate:
-        format_sql: true
-
+        ddl-auto: validate # 'validate' é uma boa opção para dev com Flyway
   flyway:
     enabled: true
     baseline-on-migrate: true
     validate-on-migrate: true
 
-app:
-  jwtSecret: ${JWT_SECRET}
-  jwtExpirationMs: ${JWT_EXPIRATION_MS}
+# Centralizando todas as configurações personalizadas da aplicação
+config:
+  # Configurações de segurança e JWT
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 86400000ms = 1 dia como padrão
+    cookie-name: ${JWT_COOKIE_NAME:myAppCookie}
 
-ecom:
-  app:
-    jwtCookieName: ${JWT_COOKIE_NAME}
 
-project:
-  image: ${PROJECT_IMAGE_PATH}
+  # Configuração de caminhos da aplicação
+  paths:
+    image-upload: ${PROJECT_IMAGE_PATH:./images/}
 
-mercadopago:
-  access:
-    token: ${MERCADOPAGO_ACCESS_TOKEN}
+  # Configurações de integrações com serviços de terceiros
+  integrations:
+    mercadopago:
+      access-token: ${MERCADOPAGO_ACCESS_TOKEN}
+    webhook:
+      base-url: ${WEBHOOK_BASE_URL}

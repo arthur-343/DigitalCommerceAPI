@@ -19,5 +19,6 @@ public interface CartService {
     void updateProductInCarts(Long cartId, Long productId);
 
     @Transactional
-    String clearCart(Long cartId);
+    void clearCartByUserEmail(String email);
+
 }

@@ -1,11 +1,8 @@
 package com.arthur.digitalcommerce.security.jwt;
 
-
-import com.arthur.digitalcommerce.security.services.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,14 +16,12 @@ import java.util.Date;
 public class JwtUtils {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
-    @Value("${app.jwtSecret}")
+    @Value("${config.jwt.secret}")
     private String jwtSecret;
 
-    @Value("${app.jwtExpirationMs}")
-    private int jwtExpirationMs;
 
-    // CORREÇÃO: Removemos a propriedade e todos os métodos de cookie
-    // (getJwtFromCookies, generateJwtCookie, getCleanJwtCookie)
+    @Value("${config.jwt.expiration-ms}")
+    private int jwtExpirationMs;
 
     public String generateTokenFromUsername(String username) {
         return Jwts.builder()

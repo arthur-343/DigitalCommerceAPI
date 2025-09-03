@@ -2,6 +2,7 @@ package com.arthur.digitalcommerce.security.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -17,6 +18,12 @@ public class SignupRequest {
     @Size(max = 50)
     @Email
     private String email;
+
+
+    @NotBlank
+    @Pattern(regexp = "\\d{11}", message = "CPF deve conter exatamente 11 dígitos.")
+    private String cpf;
+
 
     private Set<String> role;
 

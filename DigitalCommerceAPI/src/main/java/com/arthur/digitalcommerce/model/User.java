@@ -1,10 +1,10 @@
 package com.arthur.digitalcommerce.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -19,7 +19,8 @@ import java.util.Set;
 @Table(name = "users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "username"),
-                @UniqueConstraint(columnNames = "email")
+                @UniqueConstraint(columnNames = "email"),
+                @UniqueConstraint(columnNames = "cpf")
         })
 public class User {
     @Id
@@ -43,11 +44,26 @@ public class User {
     @Column(name = "password")
     private String password;
 
+    @NotBlank
+    @Pattern(regexp = "\\d{11}", message = "CPF deve conter 11 dígitos.")
+    @Column(name = "cpf", length = 11, unique = true)
+    private String cpf;
+
+
     public User(String userName, String email, String password) {
         this.userName = userName;
         this.email = email;
         this.password = password;
     }
+
+
+    public User(String userName, String email, String password, String cpf) {
+        this.userName = userName;
+        this.email = email;
+        this.password = password;
+        this.cpf = cpf;
+    }
+
 
     @Setter
     @Getter
@@ -77,3 +93,4 @@ public class User {
             orphanRemoval = true)
     private Set<Product> products;
 }
+

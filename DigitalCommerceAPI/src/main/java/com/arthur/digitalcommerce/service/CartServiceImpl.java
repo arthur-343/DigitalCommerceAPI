@@ -157,7 +157,6 @@ public class CartServiceImpl implements CartService {
         return mapCartToDTO(cart);
     }
 
-    // Método auxiliar para recalcular o total do carrinho
     private void recalculateCartTotal(Cart cart) {
         BigDecimal total = BigDecimal.ZERO;
         for (CartItem item : cart.getCartItems()) {
@@ -230,22 +229,19 @@ public class CartServiceImpl implements CartService {
         cartItemRepository.save(cartItem);
     }
 
-    @Transactional
+
+    // NOVA IMPLEMENTAÇÃO PARA O WEBHOOK
     @Override
-    public String clearCart(Long cartId) {
-        Cart cart = cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart", "cartId", cartId));
-
-        if (cart.getCartItems().isEmpty()) {
-            throw new APIException("Cart is already empty");
-        }
-
-        cartItemRepository.deleteAll(cart.getCartItems());
-
-        cart.setTotalPrice(BigDecimal.ZERO);
-
-        cartRepository.save(cart);
-
-        return "Cart cleared successfully!";
+    @Transactional
+    public void clearCartByUserEmail(String email) {
+        // Usamos o método do repositório para encontrar o carrinho pelo e-mail
+        cartRepository.findByUserEmail(email).ifPresent(cart -> {
+            if (!cart.getCartItems().isEmpty()) {
+                // A lógica de limpeza é a mesma do método acima
+                cart.getCartItems().clear();
+                cart.setTotalPrice(BigDecimal.ZERO);
+                cartRepository.save(cart);
+            }
+        });
     }
 }
