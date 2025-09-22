@@ -4,10 +4,10 @@ import com.arthur.digitalcommerce.model.Order;
 import com.arthur.digitalcommerce.model.Payment;
 import com.arthur.digitalcommerce.repository.OrderRepository;
 import com.arthur.digitalcommerce.repository.PaymentRepository;
-import com.mercadopago.MercadoPagoConfig;
+/*import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.exceptions.MPApiException;
-import com.mercadopago.exceptions.MPException;
+import com.mercadopago.exceptions.MPException;*/
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 
 @Service
 public class WebhookServiceImpl implements WebhookService {
-
+/*
     private static final Logger logger = LoggerFactory.getLogger(WebhookServiceImpl.class);
 
     @Value("${config.integrations.mercadopago.access-token}")
@@ -96,5 +96,5 @@ public class WebhookServiceImpl implements WebhookService {
         } catch (NumberFormatException e) {
             logger.error("ID de pagamento inválido recebido do webhook: {}", paymentIdStr);
         }
-    }
+    }*/
 }

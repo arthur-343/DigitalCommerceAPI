@@ -20,7 +20,7 @@ public class WebhookController {
     @Autowired
     private WebhookService webhookService;
 
-    @PostMapping("/mercadopago")
+   /* @PostMapping("/mercadopago")
     public ResponseEntity<Void> handleMercadoPagoNotification(@RequestBody MercadoPagoNotificationDTO notification) {
         logger.info("Recebida notificação do Mercado Pago: {}", notification);
 
@@ -31,5 +31,5 @@ public class WebhookController {
         }
 
         return ResponseEntity.ok().build();
-    }
+    }*/
 }

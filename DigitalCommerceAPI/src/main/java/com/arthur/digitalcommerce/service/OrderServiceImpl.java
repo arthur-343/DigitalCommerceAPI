@@ -3,12 +3,12 @@ package com.arthur.digitalcommerce.service;
 import com.arthur.digitalcommerce.model.*;
 import com.arthur.digitalcommerce.repository.*;
 import com.arthur.digitalcommerce.util.AuthUtil;
-import com.mercadopago.client.common.IdentificationRequest;
-import com.mercadopago.client.preference.*;
+/*import com.mercadopago.client.common.IdentificationRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
-import com.mercadopago.resources.preference.Preference;
+import com.mercadopago.resources.preference.Preference;*/
 import org.modelmapper.ModelMapper;
+import com.mercadopago.client.preference.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
+/*    private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
 
     @Autowired private CartRepository cartRepository;
     @Autowired private OrderRepository orderRepository;
@@ -144,5 +144,5 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-
+*/
 }
