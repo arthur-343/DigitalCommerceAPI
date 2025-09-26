@@ -31,7 +31,6 @@ public class OrderItem {
 
     private Integer quantity;
 
-    // DEPOIS:
     @Column(precision = 10, scale = 2)
     private BigDecimal discount;
 

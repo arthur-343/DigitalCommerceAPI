@@ -25,6 +25,46 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
 
+
+//usar     Cart cart = getOrCreateCartForCurrentUser(); // Supondo que você mova este método para cá
+    /*
+// Exemplo de como ficaria seu OrderServiceImpl.java
+
+@Service
+public class OrderServiceImpl implements OrderService {
+
+    private final CartService cartService;
+    private final CartRepository cartRepository;
+    // ... outros repositórios como OrderRepository
+
+    public OrderServiceImpl(CartService cartService, CartRepository cartRepository) {
+        this.cartService = cartService;
+        this.cartRepository = cartRepository;
+    }
+
+    @Override
+    @Transactional
+    public OrderDTO createOrder() {
+        // 1. Pega o carrinho do usuário atual.
+        String email = authUtil.loggedInEmail(); // Supondo que você tenha AuthUtil aqui
+        Cart cart = cartRepository.findByUserEmail(email)
+            .orElseThrow(() -> new APIException("Cannot create order from an empty cart."));
+
+        // 2. CHAMA A VALIDAÇÃO DO CARRINHO (O PASSO DE SEGURANÇA)
+        // Se houver qualquer problema, uma exceção será lançada aqui e o método irá parar.
+        ((CartServiceImpl) cartService).validateCartForCheckout(cart);
+
+        // 3. Se a validação passou, prossiga com a lógica de criar o pedido...
+        // - Criar um novo objeto Order
+        // - Mover os CartItems para OrderItems
+        // - Deduzir o estoque dos produtos
+        // - Limpar o carrinho
+        // - Salvar o pedido e retornar o OrderDTO
+
+        // ...
+    }
+}    */
+
 /*    private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
 
     @Autowired private CartRepository cartRepository;

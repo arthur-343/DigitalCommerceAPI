@@ -21,7 +21,7 @@ import java.util.List;
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long productId;
 
     @NotBlank
@@ -32,7 +32,8 @@ public class Product {
     @NotBlank
     @Size(min = 6, message = "Product description must contain atleast 6 characters")
     private String description;
-    private Integer quantity;
+
+    private Integer quantityInStock;
 
 
     @Column(precision = 10, scale = 2)
@@ -40,6 +41,8 @@ public class Product {
 
     @Column(precision = 10, scale = 2)
     private BigDecimal specialPrice;
+
+    private boolean specialPriceActive;
 
     @ManyToOne
     @JoinColumn(name = "category_id")

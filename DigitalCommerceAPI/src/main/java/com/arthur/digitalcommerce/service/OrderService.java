@@ -3,5 +3,7 @@ package com.arthur.digitalcommerce.service;
 
 
 public interface OrderService {
-    /*Preference createPaymentPreference();*/
+    /*Preference createPaymentPreference();
+    * public class OrderServiceImpl implements OrderService
+    * */
 }

@@ -19,10 +19,13 @@ public class ProductDTO {
     private String productName;
     private String description;
     private String image;
-    private Integer quantity;
+    private Integer quantityInStock;
+    private Integer cartQuantity;
+    private String warningMessage;
     private BigDecimal price;
     private BigDecimal discount;
     private BigDecimal specialPrice;
+    private boolean specialPriceActive;
     private Long categoryId;
 
 

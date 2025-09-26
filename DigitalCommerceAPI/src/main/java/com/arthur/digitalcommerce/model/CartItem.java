@@ -27,10 +27,9 @@ public class CartItem {
 
     private Integer quantity;
 
-    // DEPOIS:
     @Column(precision = 10, scale = 2)
     private BigDecimal discount;
 
-    @Column(precision = 10, scale = 2)
-    private BigDecimal productPrice;
+
+
 }

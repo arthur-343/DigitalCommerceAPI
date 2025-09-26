@@ -1,69 +1,73 @@
 package com.arthur.digitalcommerce.controller;
 
-
-import com.arthur.digitalcommerce.model.Cart;
 import com.arthur.digitalcommerce.payload.CartDTO;
-import com.arthur.digitalcommerce.repository.CartRepository;
 import com.arthur.digitalcommerce.service.CartService;
-import com.arthur.digitalcommerce.util.AuthUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/carts")
+@RequestMapping("/api") // URL base para todos os endpoints
 public class CartController {
 
-    @Autowired
-    private CartRepository cartRepository;
+    private final CartService cartService;
 
-    @Autowired
-    private AuthUtil authUtil;
+    // Injeção de dependência via construtor
+    public CartController(CartService cartService) {
+        this.cartService = cartService;
+    }
 
-    @Autowired
-    private CartService cartService;
-
-    @PostMapping("/products/{productId}/quantity/{quantity}")
-    public ResponseEntity<CartDTO> addProductToCart(@PathVariable Long productId,
-                                                    @PathVariable Integer quantity){
+    /**
+     * Adiciona um produto ao carrinho do usuário logado.
+     */
+    @PostMapping("/carts/products/{productId}")
+    public ResponseEntity<CartDTO> addProductToCart(
+            @PathVariable Long productId,
+            @RequestParam(defaultValue = "1") Integer quantity) {
         CartDTO cartDTO = cartService.addProductToCart(productId, quantity);
-        return new ResponseEntity<CartDTO>(cartDTO, HttpStatus.CREATED);
+        return new ResponseEntity<>(cartDTO, HttpStatus.CREATED);
     }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<CartDTO>> getCarts() {
+    /**
+     * Retorna o carrinho do usuário atualmente logado.
+     */
+    @GetMapping("/carts/my-cart")
+    public ResponseEntity<CartDTO> getMyCart() {
+        CartDTO cartDTO = cartService.getCartForCurrentUser();
+        if (cartDTO == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(cartDTO);
+    }
+
+    /**
+     * Atualiza a quantidade de um produto no carrinho do usuário.
+     */
+    @PutMapping("/carts/products/{productId}/quantity/{quantity}")
+    public ResponseEntity<CartDTO> updateProductQuantity(
+            @PathVariable Long productId,
+            @PathVariable Integer quantity) {
+        CartDTO cartDTO = cartService.updateProductQuantityInCart(productId, quantity);
+        return ResponseEntity.ok(cartDTO);
+    }
+
+    /**
+     * Remove um produto do carrinho do usuário.
+     */
+    @DeleteMapping("/carts/products/{productId}")
+    public ResponseEntity<String> deleteProductFromCart(@PathVariable Long productId) {
+        String status = cartService.deleteProductFromCart(productId);
+        return ResponseEntity.ok(status);
+    }
+
+    /**
+     * [ADMIN] Endpoint para listar todos os carrinhos do sistema.
+     */
+    @GetMapping("/admin/carts")
+    public ResponseEntity<List<CartDTO>> getAllCarts() {
         List<CartDTO> cartDTOs = cartService.getAllCarts();
-        return new ResponseEntity<List<CartDTO>>(cartDTOs, HttpStatus.FOUND);
-    }
-
-    @GetMapping("/carts/users/cart")
-    public ResponseEntity<CartDTO> getCartById(){
-        String emailId = authUtil.loggedInEmail();
-        Cart cart = cartRepository.findCartByEmail(emailId);
-        Long cartId = cart.getCartId();
-        CartDTO cartDTO = cartService.getCart(emailId, cartId);
-        return new ResponseEntity<CartDTO>(cartDTO, HttpStatus.OK);
-    }
-
-    @PutMapping("/cart/products/{productId}/quantity/{operation}")
-    public ResponseEntity<CartDTO> updateCartProduct(@PathVariable Long productId,
-                                                     @PathVariable String operation) {
-
-        CartDTO cartDTO = cartService.updateProductQuantityInCart(productId,
-                operation.equalsIgnoreCase("delete") ? -1 : 1);
-
-        return new ResponseEntity<CartDTO>(cartDTO, HttpStatus.OK);
-    }
-
-    @DeleteMapping("/cart/{cartId}/product/{productId}")
-    public ResponseEntity<String> deleteProductFromCart(@PathVariable Long cartId,
-                                                        @PathVariable Long productId) {
-        String status = cartService.deleteProductFromCart(cartId, productId);
-
-        return new ResponseEntity<String>(status, HttpStatus.OK);
+        return new ResponseEntity<>(cartDTOs, HttpStatus.OK); // Status corrigido para OK
     }
 }
