@@ -13,7 +13,7 @@ import java.util.List;
 
 
 @Controller
-@RequestMapping("/api")
+@RequestMapping("/api/")
 public class AddresseController {
 
     @Autowired

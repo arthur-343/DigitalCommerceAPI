@@ -14,19 +14,24 @@ public class ModelMapperConfig {
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
 
-        // --- CONFIGURAÇÃO CHAVE PARA ATUALIZAÇÕES PARCIAIS ---
+        // 1. Configuração para atualizações parciais (JÁ ESTAVA CORRETO)
         // Diz ao ModelMapper para pular qualquer campo que seja nulo na origem (DTO).
-        // Isso é o que permite que a atualização parcial funcione com uma única linha.
         modelMapper.getConfiguration()
                 .setMatchingStrategy(MatchingStrategies.STRICT)
                 .setSkipNullEnabled(true);
 
-        // --- CONFIGURAÇÃO DE SEGURANÇA PARA ATUALIZAÇÕES ---
-        // Adiciona uma regra global para o mapeamento de ProductDTO para Product.
-        // Diz para SEMPRE ignorar a tentativa de definir a categoria diretamente.
-        // Isso previne o erro "identifier of an instance was altered".
+        // 2. Regra para mapear DTO -> Entidade (JÁ ESTAVA CORRETO)
+        // Ignora a categoria, pois ela é tratada manualmente no service para evitar erros.
         modelMapper.typeMap(ProductDTO.class, Product.class)
                 .addMappings(mapper -> mapper.skip(Product::setCategory));
+
+        // 3. REGRA ADICIONADA: Mapear Entidade -> DTO (A CORREÇÃO)
+        // Ensina como obter o 'categoryId' a partir do objeto 'category' da entidade.
+        modelMapper.typeMap(Product.class, ProductDTO.class)
+                .addMappings(mapper -> mapper.map(
+                        src -> src.getCategory().getCategoryId(), // Pega o ID da categoria aninhada
+                        ProductDTO::setCategoryId              // E coloca no campo 'categoryId' do DTO
+                ));
 
         return modelMapper;
     }

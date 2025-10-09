@@ -14,6 +14,7 @@ import com.arthur.digitalcommerce.repository.CartRepository;
 import com.arthur.digitalcommerce.repository.ProductRepository;
 import com.arthur.digitalcommerce.util.AuthUtil;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
@@ -30,14 +32,6 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final ModelMapper modelMapper;
     private final AuthUtil authUtil;
-
-    public CartServiceImpl(CartRepository cartRepository, ProductRepository productRepository, CartItemRepository cartItemRepository, ModelMapper modelMapper, AuthUtil authUtil) {
-        this.cartRepository = cartRepository;
-        this.productRepository = productRepository;
-        this.cartItemRepository = cartItemRepository;
-        this.modelMapper = modelMapper;
-        this.authUtil = authUtil;
-    }
 
     @Override
     @Transactional
@@ -97,10 +91,9 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         if (quantity <= 0) {
-            return mapToDTO(deleteItemFromCart(cart, productId));
+            return mapToDTO(deleteItemFromCart(productId));
         }
 
-        // --- ALTERADO AQUI ---
         if (product.getQuantityInStock() < quantity) {
             throw new APIException("Not enough stock. Available: " + product.getQuantityInStock());
         }
@@ -121,12 +114,26 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public String deleteProductFromCart(Long productId) {
-        Cart cart = getOrCreateCartForCurrentUser();
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
-        deleteItemFromCart(cart, productId);
-        return "Product '" + product.getProductName() + "' successfully removed from the cart!";
+        Cart cart = getOrCreateCartForCurrentUser();
+        CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cart.getCartId(), productId)
+                .orElse(null);
+
+        if (cartItem != null) {
+
+            cart.getCartItems().remove(cartItem);
+
+            cartItemRepository.delete(cartItem);
+
+            recalculateCartTotal(cart);
+
+
+            return "Produto '" + product.getProductName() + "' removido com sucesso do carrinho!";
+        }
+
+        return "Produto '" + product.getProductName() + "' não foi encontrado no carrinho.";
     }
 
     @Override
@@ -174,7 +181,7 @@ public class CartServiceImpl implements CartService {
         Long productId = event.getProductId();
         List<Cart> cartsToUpdate = cartRepository.findCartsByProductId(productId);
         for (Cart cart : cartsToUpdate) {
-            deleteItemFromCart(cart, productId);
+            deleteItemFromCart(productId);
         }
     }
 
@@ -184,16 +191,24 @@ public class CartServiceImpl implements CartService {
 
 
 
-    private Cart deleteItemFromCart(Cart cart, Long productId) {
+    private Cart deleteItemFromCart(Long productId) {
+        // 1. O método agora busca o carrinho por conta própria.
+        Cart cart = getOrCreateCartForCurrentUser();
+
         CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cart.getCartId(), productId)
                 .orElse(null);
 
         if (cartItem != null) {
+            // Lógica de remoção que já corrigimos
             cart.getCartItems().remove(cartItem);
+            cartItem.setCart(null);
             cartItemRepository.delete(cartItem);
+
             recalculateCartTotal(cart);
+
             return cartRepository.save(cart);
         }
+
         return cart;
     }
 

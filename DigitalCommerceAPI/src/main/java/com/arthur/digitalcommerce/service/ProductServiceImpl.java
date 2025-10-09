@@ -10,6 +10,7 @@ import com.arthur.digitalcommerce.payload.ProductDTO;
 import com.arthur.digitalcommerce.payload.ProductResponse;
 import com.arthur.digitalcommerce.repository.CategoryRepository;
 import com.arthur.digitalcommerce.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,30 +26,18 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
-    private final ModelMapper modelMapper; // Este agora virá pré-configurado pela classe ModelMapperConfig
+    private final ModelMapper modelMapper;
     private final FileService fileService;
     private final ApplicationEventPublisher eventPublisher;
-    private final String imageUploadPath;
 
-    public ProductServiceImpl(CategoryRepository categoryRepository,
-                              ProductRepository productRepository,
-                              ModelMapper modelMapper,
-                              FileService fileService,
-                              ApplicationEventPublisher eventPublisher,
-                              @Value("${config.paths.image-upload}") String imageUploadPath) {
-        this.categoryRepository = categoryRepository;
-        this.productRepository = productRepository;
-        this.modelMapper = modelMapper;
-        this.fileService = fileService;
-        this.eventPublisher = eventPublisher;
-        this.imageUploadPath = imageUploadPath;
-    }
+    @Value("${config.paths.image-upload}")
+    private String imageUploadPath;
 
-    // ... (os outros métodos como addProduct, getAllProducts, etc., permanecem os mesmos)
     @Override
     public ProductDTO addProduct(ProductDTO productDTO, MultipartFile image) throws IOException {
         Category category = categoryRepository.findById(productDTO.getCategoryId())

@@ -22,13 +22,14 @@ public class CartController {
     /**
      * Adiciona um produto ao carrinho do usuário logado.
      */
-    @PostMapping("/carts/products/{productId}")
+    @PostMapping("/carts/products/{productId}/{quantity}")
     public ResponseEntity<CartDTO> addProductToCart(
             @PathVariable Long productId,
-            @RequestParam(defaultValue = "1") Integer quantity) {
+            @PathVariable Integer quantity) {
         CartDTO cartDTO = cartService.addProductToCart(productId, quantity);
         return new ResponseEntity<>(cartDTO, HttpStatus.CREATED);
     }
+
 
     /**
      * Retorna o carrinho do usuário atualmente logado.

@@ -11,7 +11,7 @@ import com.arthur.digitalcommerce.security.request.SignupRequest;
 import com.arthur.digitalcommerce.security.response.UserInfoResponse;
 import com.arthur.digitalcommerce.security.response.MessageResponse;
 import com.arthur.digitalcommerce.security.services.UserDetailsImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,29 +22,24 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private PasswordEncoder encoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder encoder;
 
     public ResponseEntity<?> authenticateUser(LoginRequest loginRequest) {
-        // Nenhuma alteração necessária aqui
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
@@ -88,27 +83,17 @@ public class AuthService {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
         }
 
-        /**
-         * ---- NOVA VALIDAÇÃO ADICIONADA ----
-         * Verificamos se o CPF já existe no banco de dados.
-         */
         if (userRepository.existsByCpf(signUpRequest.getCpf())) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: CPF is already in use!"));
         }
 
-
-        /**
-         * ---- CRIAÇÃO DO USUÁRIO ATUALIZADA ----
-         * Agora passamos o CPF para o construtor da entidade User.
-         */
         User user = new User(
                 signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
                 encoder.encode(signUpRequest.getPassword()),
-                signUpRequest.getCpf() // <-- CPF é incluído aqui
+                signUpRequest.getCpf()
         );
 
-        // O resto da lógica para atribuir roles permanece a mesma
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
 
@@ -143,7 +128,6 @@ public class AuthService {
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 
-    // Nenhuma alteração necessária nos métodos abaixo
     public String getCurrentUserName(Authentication authentication) {
         return authentication != null ? authentication.getName() : "";
     }
