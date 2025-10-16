@@ -12,13 +12,20 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      # ALTERAÇÃO PRINCIPAL AQUI:
+      # Desligamos o controle do Hibernate para entregar ao Flyway.
+      # Flyway agora será o único responsável por criar e gerenciar o schema.
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
     database: H2
+
+  # Garantindo que o Flyway esteja ativo para o perfil de teste.
+  flyway:
+    enabled: true
 
   h2:
     console:

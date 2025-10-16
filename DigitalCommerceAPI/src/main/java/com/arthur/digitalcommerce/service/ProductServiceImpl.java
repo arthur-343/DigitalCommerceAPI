@@ -43,9 +43,6 @@ public class ProductServiceImpl implements ProductService {
         Category category = categoryRepository.findById(productDTO.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "categoryId", productDTO.getCategoryId()));
 
-        if (productRepository.existsByProductNameAndCategory(productDTO.getProductName(), category)) {
-            throw new APIException("Product with name '" + productDTO.getProductName() + "' already exists in this category.");
-        }
 
         if (productDTO.getSpecialPrice() != null && productDTO.getPrice() != null &&
                 productDTO.getSpecialPrice().compareTo(productDTO.getPrice()) >= 0) {
