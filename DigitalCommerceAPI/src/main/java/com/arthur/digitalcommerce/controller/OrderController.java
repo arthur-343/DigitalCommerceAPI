@@ -1,26 +1,36 @@
 package com.arthur.digitalcommerce.controller;
 
 import com.arthur.digitalcommerce.service.OrderService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.mercadopago.exceptions.MPApiException;
+import com.mercadopago.exceptions.MPException;
+import com.mercadopago.resources.preference.Preference;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-// Você pode usar o seu controller existente ou criar um novo
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class OrderController {
-/*
-    @Autowired
-    private OrderService orderService;
 
-    @PostMapping("/create-preference")
-    public ResponseEntity<?> createPreference() {
+    private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
+
+    private final OrderService orderService;
+
+    @PostMapping("/create-preference/{addressId}")
+    public ResponseEntity<?> createPreference(@PathVariable Long addressId) {
         try {
-            Preference preference = orderService.createPaymentPreference();
-            // Retornamos o objeto de preferência completo. O frontend usará o 'id' ou 'initPoint'.
+            Preference preference = orderService.createPaymentPreference(addressId);
             return ResponseEntity.ok(preference);
+
+        } catch (MPException | MPApiException e) {
+            logger.error("Error creating Mercado Pago preference: {}", e.getMessage());
+            return ResponseEntity.badRequest().body("Error communicating with payment gateway.");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            logger.error("Unexpected error in createPreference", e);
+            return ResponseEntity.status(500).body("An internal server error occurred.");
         }
-    }*/
+    }
 }

@@ -33,6 +33,8 @@ public class CartServiceImpl implements CartService {
     private final ModelMapper modelMapper;
     private final AuthUtil authUtil;
 
+    // ... addProductToCart e getCartForCurrentUser permanecem os mesmos ...
+
     @Override
     @Transactional
     public CartDTO addProductToCart(Long productId, Integer quantity) {
@@ -63,7 +65,6 @@ public class CartServiceImpl implements CartService {
             cartItem.setQuantity(quantity);
             cartItem.setDiscount(BigDecimal.ZERO);
 
-
             cart.getCartItems().add(cartItem);
         }
 
@@ -82,6 +83,33 @@ public class CartServiceImpl implements CartService {
         return mapToDTO(cart);
     }
 
+    // ======================================================= //
+    // MÉTODOS DE EXCLUSÃO "BRUTOS" E REUTILIZÁVEIS            //
+    // ======================================================= //
+
+    /**
+     * NOVO HELPER "BRUTO" E SEGURO
+     * Deleta um único item do carrinho usando a estratégia explícita (manual).
+     * É "burro" (recebe o carrinho) para funcionar em qualquer contexto.
+     */
+    @Transactional
+    private boolean removeProductFromCartExplicitly(Cart cart, Long productId) {
+        // 1. Encontra o item
+        CartItem cartItemToRemove = cartItemRepository.findCartItemByProductIdAndCartId(cart.getCartId(), productId)
+                .orElse(null);
+
+        if (cartItemToRemove != null) {
+            // 2. Remove da lista em memória
+            cart.getCartItems().remove(cartItemToRemove);
+            // 3. Deleta do banco EXPLICITAMENTE
+            cartItemRepository.delete(cartItemToRemove);
+
+            recalculateCartTotal(cart);
+            cartRepository.save(cart);
+            return true;
+        }
+        return false;
+    }
 
     @Override
     @Transactional
@@ -91,7 +119,9 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         if (quantity <= 0) {
-            return mapToDTO(deleteItemFromCart(productId));
+            // Chama o novo helper "bruto"
+            removeProductFromCartExplicitly(cart, productId);
+            return mapToDTO(cart);
         }
 
         if (product.getQuantityInStock() < quantity) {
@@ -110,7 +140,6 @@ public class CartServiceImpl implements CartService {
         return mapToDTO(cart);
     }
 
-
     @Override
     @Transactional
     public String deleteProductFromCart(Long productId) {
@@ -118,23 +147,53 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
 
         Cart cart = getOrCreateCartForCurrentUser();
-        CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cart.getCartId(), productId)
-                .orElse(null);
 
-        if (cartItem != null) {
+        // Chama o novo helper "bruto"
+        boolean removed = removeProductFromCartExplicitly(cart, productId);
 
-            cart.getCartItems().remove(cartItem);
-
-            cartItemRepository.delete(cartItem);
-
-            recalculateCartTotal(cart);
-
-
-            return "Produto '" + product.getProductName() + "' removido com sucesso do carrinho!";
+        if (removed) {
+            return "Product '" + product.getProductName() + "' successfully removed from cart!";
+        } else {
+            return "Product '" + product.getProductName() + "' not found in cart.";
         }
-
-        return "Produto '" + product.getProductName() + "' não foi encontrado no carrinho.";
     }
+
+    @EventListener
+    @Transactional
+    public void handleProductDelete(ProductDeletedEvent event) {
+        Long productId = event.getProductId();
+        List<Cart> cartsToUpdate = cartRepository.findCartsByProductId(productId);
+
+        for (Cart cart : cartsToUpdate) {
+            // Chama o novo helper "bruto" para cada carrinho
+            removeProductFromCartExplicitly(cart, productId);
+        }
+    }
+
+    /**
+     * MÉTODO BRUTO PARA O WEBHOOK (que já funcionou)
+     */
+    @Override
+    @Transactional
+    public void clearCartByUserEmail(String email) {
+        cartRepository.findByUserEmail(email).ifPresent(cart -> {
+            if (!cart.getCartItems().isEmpty()) {
+
+                // 1. Ordem bruta (DELETE * FROM cart_item WHERE cart_id = ?)
+                cartItemRepository.deleteByCart(cart);
+
+                // 2. Limpa a lista em memória
+                cart.getCartItems().clear();
+
+                cart.setTotalPrice(BigDecimal.ZERO);
+                cartRepository.save(cart);
+            }
+        });
+    }
+
+    // ======================================================= //
+    // MÉTODOS AUXILIARES (NENHUMA MUDANÇA ABAIXO)             //
+    // ======================================================= //
 
     @Override
     public List<CartDTO> getAllCarts() {
@@ -145,74 +204,16 @@ public class CartServiceImpl implements CartService {
         return carts.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional
-    public void clearCartByUserEmail(String email) {
-        cartRepository.findByUserEmail(email).ifPresent(cart -> {
-            if (!cart.getCartItems().isEmpty()) {
-                cartItemRepository.deleteAll(cart.getCartItems());
-                cart.getCartItems().clear();
-                cart.setTotalPrice(BigDecimal.ZERO);
-                cartRepository.save(cart);
-            }
-        });
-    }
-
-    // *** LISTENERS DE EVENTOS E MÉTODOS PRIVADOS ***
-
     @EventListener
     @Transactional
     public void handleProductUpdate(ProductUpdatedEvent event) {
         Product updatedProduct = event.getProduct();
-        // Encontra todos os carrinhos que contêm o produto que foi alterado.
         List<Cart> cartsToUpdate = cartRepository.findCartsByProductId(updatedProduct.getProductId());
-
         for (Cart cart : cartsToUpdate) {
-            // Apenas recalcula o total. O método recalculateCartTotal
             recalculateCartTotal(cart);
             cartRepository.save(cart);
         }
     }
-
-
-    @EventListener
-    @Transactional
-    public void handleProductDelete(ProductDeletedEvent event) {
-        Long productId = event.getProductId();
-        List<Cart> cartsToUpdate = cartRepository.findCartsByProductId(productId);
-        for (Cart cart : cartsToUpdate) {
-            deleteItemFromCart(productId);
-        }
-    }
-
-    // ======================================================= //
-    // MÉTODOS PRIVADOS AUXILIARES                             //
-    // ======================================================= //
-
-
-
-    private Cart deleteItemFromCart(Long productId) {
-        // 1. O método agora busca o carrinho por conta própria.
-        Cart cart = getOrCreateCartForCurrentUser();
-
-        CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cart.getCartId(), productId)
-                .orElse(null);
-
-        if (cartItem != null) {
-            // Lógica de remoção que já corrigimos
-            cart.getCartItems().remove(cartItem);
-            cartItem.setCart(null);
-            cartItemRepository.delete(cartItem);
-
-            recalculateCartTotal(cart);
-
-            return cartRepository.save(cart);
-        }
-
-        return cart;
-    }
-
-
 
     private Cart getOrCreateCartForCurrentUser() {
         String email = authUtil.loggedInEmail();
@@ -224,47 +225,28 @@ public class CartServiceImpl implements CartService {
         });
     }
 
-
     public void validateCartForCheckout(Cart cart) {
-        // Check 0: O carrinho está vazio?
         if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
             throw new APIException("Cannot proceed to checkout with an empty cart.");
         }
-
         for (CartItem item : cart.getCartItems()) {
-            // Para máxima segurança, buscamos a versão mais atual do produto do banco
             Product product = productRepository.findById(item.getProduct().getProductId())
                     .orElseThrow(() -> new APIException("Product '" + item.getProduct().getProductName() +
-                            "' is no longer available and has been removed from the store."));
-
-
-
-            // Check 2: Estoque
+                            "' is no longer available. Please remove it from your cart."));
             if (product.getQuantityInStock() <= 0) {
-                // Caso 2A: Estoque completamente esgotado.
                 throw new APIException("Sorry, '" + product.getProductName() +
                         "' is now out of stock. Please remove it from your cart to proceed.");
             } else if (item.getQuantity() > product.getQuantityInStock()) {
-                // Caso 2B: Estoque insuficiente para a quantidade desejada.
                 throw new APIException("Cannot proceed to checkout. Product '" + product.getProductName() +
                         "' has insufficient stock. Available: " + product.getQuantityInStock() +
                         ", in your cart: " + item.getQuantity());
             }
-
-            // Check 3: Limite de compra por cliente (Exemplo)
-            // final int MAX_QUANTITY_PER_CUSTOMER = 5;
-            // if (item.getQuantity() > MAX_QUANTITY_PER_CUSTOMER) {
-            //     throw new APIException("You can only purchase a maximum of " + MAX_QUANTITY_PER_CUSTOMER +
-            //                            " units of '" + product.getProductName() + "'.");
-            // }
         }
     }
 
     private void recalculateCartTotal(Cart cart) {
         BigDecimal total = BigDecimal.ZERO;
         for (CartItem item : cart.getCartItems()) {
-
-            // --- LÓGICA REVERTIDA PARA O MODELO DINÂMICO ---
             Product product = item.getProduct();
             BigDecimal currentBasePrice;
             if (product.isSpecialPriceActive() && product.getSpecialPrice() != null) {
@@ -272,47 +254,35 @@ public class CartServiceImpl implements CartService {
             } else {
                 currentBasePrice = product.getPrice();
             }
-
             BigDecimal finalUnitPrice = currentBasePrice;
-
             BigDecimal discountPercent = item.getDiscount();
             if (discountPercent != null && discountPercent.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal discountMultiplier = discountPercent.divide(new BigDecimal("100"));
                 BigDecimal discountAmount = currentBasePrice.multiply(discountMultiplier);
                 finalUnitPrice = currentBasePrice.subtract(discountAmount);
             }
-
             BigDecimal subtotal = finalUnitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
             total = total.add(subtotal);
         }
         cart.setTotalPrice(total);
     }
 
-
-
     private CartDTO mapToDTO(Cart cart) {
         recalculateCartTotal(cart);
         CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
-
         List<ProductDTO> productDTOs = cart.getCartItems().stream().map(item -> {
             ProductDTO productDTO = modelMapper.map(item.getProduct(), ProductDTO.class);
             productDTO.setCartQuantity(item.getQuantity());
-
-            // --- LÓGICA DE VERIFICAÇÃO ADICIONADA AQUI ---
             if (productDTO.getCartQuantity() > productDTO.getQuantityInStock()) {
                 if (productDTO.getQuantityInStock() > 0) {
-                    productDTO.setWarningMessage("Atenção! Apenas " + productDTO.getQuantityInStock() + " unidades disponíveis em estoque.");
+                    productDTO.setWarningMessage("Warning! Only " + productDTO.getQuantityInStock() + " units available in stock.");
                 } else {
-                    productDTO.setWarningMessage("Produto esgotado! Remova-o do carrinho para continuar.");
+                    productDTO.setWarningMessage("Product out of stock! Please remove it from the cart to continue.");
                 }
             }
-
             return productDTO;
         }).collect(Collectors.toList());
-
         cartDTO.setProducts(productDTOs);
         return cartDTO;
     }
-
 }
-
