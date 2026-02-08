@@ -1,7 +1,14 @@
 # 🛒 DigitalCommerce API
 
-A robust and scalable E-commerce REST API built with **Spring Boot 3**. 
-Focused on traceability, resilience, and industrial standards, featuring full payment integration with **Mercado Pago**, automated testing, and containerization.
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+
+A robust and scalable E-commerce REST API built with **Spring Boot 3**. Focused on traceability, resilience, and industrial standards, featuring full payment integration with **Mercado Pago**, automated testing, and containerization.
+
+🔗 **GitHub Repository:** [arthurssace/digitalcommerce-api](https://github.com/arthurssace/digitalcommerce-api)  
+🐳 **Docker Hub Image:** [arthurssace/digitalcommerce-api](https://hub.docker.com/r/arthurssace/digitalcommerce-api)
 
 ---
 
@@ -12,10 +19,29 @@ Focused on traceability, resilience, and industrial standards, featuring full pa
 * **Loose Coupling:** Business logic can be updated without affecting API entry points.
 * **Clean Implementation:** Services (like `AddressesServiceImpl`, `CartServiceImpl`) follow predictable and testable contracts.
 
+
+
 ### 📑 Purchase History & Audit System
 * **Transaction Logs:** Each checkout creates an `Order` with an initial `PENDING_PAYMENT` status.
 * **Audit Trail:** All outcomes (success, pending, failure) are recorded for financial tracking.
 * **Data Immutability:** Once payment is confirmed, order details are "frozen" to prevent future catalog changes from affecting historical records.
+
+---
+
+## ⚡ Key Features & Services
+
+### 💳 Checkout & Webhook Flow
+* **Preference Creation:** Validates stock availability in real-time, persists the order in the database, and generates the **Mercado Pago** preference link.
+* **External Sync:** An intelligent **Webhook** listener handles asynchronous notifications, updating orders to `PAID`, logging payment metadata, and triggering automated cart clearance.
+* **Stock Management:** Strict concurrency checks prevent overselling during high-traffic checkout sessions.
+
+### 🔄 Event-Driven Integrity
+The system utilizes Spring's `ApplicationEventPublisher` to maintain internal consistency without tight coupling.
+* **Example:** Deleting a product automatically triggers an internal event to update or remove that item from all active shopping carts.
+
+### 📁 Advanced File Handling
+* **Security:** Product image uploads use **UUIDs** to eliminate filename collisions and prevent security vulnerabilities.
+* **Automation:** Features dynamic directory creation on the server for seamless asset management.
 
 ---
 
@@ -26,12 +52,16 @@ Focused on traceability, resilience, and industrial standards, featuring full pa
 
 ---
 
-## 🐳 Containerization with Docker
-* **Dockerfile:** Optimized multi-stage build to ensure small and secure images.
-* **Docker Compose:** Orchestrates the API and PostgreSQL with volume persistence and dedicated networking.
+## 🐳 Containerization & Quick Start
 
-### 🚀 Quick Start
+The application is fully containerized for easy deployment and development.
+
 ```bash
+# Clone the repository
+git clone [https://github.com/arthurssace/digitalcommerce-api.git](https://github.com/arthurssace/digitalcommerce-api.git)
+
+# Spin up the infrastructure (API + PostgreSQL)
+docker-compose up -d
 
 ⚡ Key Features & Services
 💳 Checkout & Webhook Flow
