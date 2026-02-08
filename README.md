@@ -1,56 +1,57 @@
-🛒 DigitalCommerce API
-A robust and scalable E-commerce REST API built with Spring Boot 3.
-Focused on traceability, resilience, and industrial standards, featuring full payment integration with Mercado Pago, automated testing, and containerization.
+# 🛒 DigitalCommerce API
 
-🏗️ Architecture & Business Logic
-⚙️ MVC & Service Layer Pattern
-Interface-Implementation Separation: Controllers interact only with interfaces.
+A robust and scalable E-commerce REST API built with **Spring Boot 3**. 
+Focused on traceability, resilience, and industrial standards, featuring full payment integration with **Mercado Pago**, automated testing, and containerization.
 
-Loose Coupling: Business logic can be updated without affecting entry points.
+---
 
-Clean Implementation: Services (AddressesServiceImpl, CartServiceImpl) follow predictable and testable contracts.
+## 🏗️ Architecture & Business Logic
 
-📑 Purchase History & Audit System
-Transaction Logs: Each checkout creates an Order with PENDING_PAYMENT status.
+### ⚙️ MVC & Service Layer Pattern
+* **Interface-Implementation Separation:** Controllers interact only with interfaces to promote decoupling.
+* **Loose Coupling:** Business logic can be updated without affecting API entry points.
+* **Clean Implementation:** Services (like `AddressesServiceImpl`, `CartServiceImpl`) follow predictable and testable contracts.
 
-Audit Trail: All outcomes (success, pending, failure) are recorded.
+### 📑 Purchase History & Audit System
+* **Transaction Logs:** Each checkout creates an `Order` with an initial `PENDING_PAYMENT` status.
+* **Audit Trail:** All outcomes (success, pending, failure) are recorded for financial tracking.
+* **Data Immutability:** Once payment is confirmed, order details are "frozen" to prevent future catalog changes from affecting historical records.
 
-Data Immutability: Once payment is confirmed, order details are frozen to prevent discrepancies.
+---
 
-🧪 Automated Testing Suite
-Unit Testing (JUnit 5 & Mockito): Validates stock rules, discounts, and pricing logic.
+## 🧪 Automated Testing Suite
+* **Unit Testing (JUnit 5 & Mockito):** Validates stock rules, discounts, and pricing logic.
+* **Integration Testing:** Ensures the full flow from the API endpoint down to the PostgreSQL database.
+* **Gateway Mocking:** External Mercado Pago calls are mocked to ensure consistent and stable test runs.
 
-Integration Testing: Ensures full flow from API endpoint to PostgreSQL.
+---
 
-Gateway Mocking: External Mercado Pago calls are mocked for consistency.
+## 🐳 Containerization with Docker
+* **Dockerfile:** Optimized multi-stage build to ensure small and secure images.
+* **Docker Compose:** Orchestrates the API and PostgreSQL with volume persistence and dedicated networking.
 
-🐳 Containerization with Docker
-Dockerfile: Optimized multi-stage build.
+### 🚀 Quick Start
+```bash
 
-Docker Compose: Orchestrates API + PostgreSQL with volume persistence and networking.
-
-🚀 Quick Start
-bash
-docker-compose up -d
 ⚡ Key Features & Services
 💳 Checkout & Webhook Flow
-Preference Creation: Validates stock, saves order, generates Mercado Pago preference.
+Preference Creation: Validates stock availability in real-time, persists the order in the database, and generates the Mercado Pago preference link for the customer.
 
-External Sync: Webhook updates order to PAID, saves payment details, clears cart.
+External Sync: An intelligent Webhook listener handles asynchronous notifications, updating orders to PAID status, logging payment metadata, and triggering automated cart clearance.
 
-Stock Management: Real-time checks prevent overselling.
+Stock Management: Strict concurrency checks prevent overselling during high-traffic checkout sessions.
 
 🔄 Event-Driven Integrity
-Uses ApplicationEventPublisher for synchronization.
+The system utilizes Spring's ApplicationEventPublisher to maintain internal consistency without tightly coupling services.
 
-Example: deleting a product triggers updates in active carts.
+Example: When a product is deleted by an admin, an internal event is fired to automatically update or remove that item from all active customer shopping carts.
 
 📁 Advanced File Handling
-Image uploads with UUIDs to avoid collisions.
+Security: All product image uploads are renamed using UUIDs to eliminate filename collisions and prevent directory traversal attacks.
 
-Dynamic directory creation on server.
+Automation: Features dynamic directory creation on the host server to ensure seamless asset management even in fresh environments.
 
-Method,Endpoint,Description,Role
+```
 
 ## 📖 API Endpoints Summary
 
