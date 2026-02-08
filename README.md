@@ -83,6 +83,6 @@ config.integrations.webhook.base-url=[https://your-public-url.com](https://your-
 # 🖼️ Image Upload Path
 config.paths.image-upload=/path/to/product/images
 
-
+```
 👨‍💻 Developed by
 Arthur – Backend Engineer dedicated to building high-availability, mission-critical systems.
