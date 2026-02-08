@@ -66,15 +66,19 @@ Method,Endpoint,Description,Role
 | **POST** | `/api/orders/create-preference/{id}` | Start checkout & log attempt to DB. | `USER` |
 | **GET** | `/api/orders/user` | View personal purchase history (Paid/Failed). | `USER` |
 | **POST** | `/api/webhooks/mercadopago` | Async payment listener & auditor. | Internal |
-🔧 Environment Setup
-Create a .env file or update application.properties with the following variables:
 
-ini
+---
+
+## 🔧 Environment Setup
+
+Create a `.env` file or update `application.properties` with the following variables:
+
+```ini
 # 🔑 Mercado Pago Integration
 config.integrations.mercadopago.access-token=YOUR_MERCADO_PAGO_TOKEN
 
 # 🌐 Webhook Base URL (use Ngrok for local testing)
-config.integrations.webhook.base-url=https://your-public-url.com
+config.integrations.webhook.base-url=[https://your-public-url.com](https://your-public-url.com)
 
 # 🖼️ Image Upload Path
 config.paths.image-upload=/path/to/product/images
