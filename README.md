@@ -62,24 +62,22 @@ git clone [https://github.com/arthurssace/digitalcommerce-api.git](https://githu
 
 # Spin up the infrastructure (API + PostgreSQL)
 docker-compose up -d
+```
+## ⚡ Key Features & Services
 
-⚡ Key Features & Services
-💳 Checkout & Webhook Flow
-Preference Creation: Validates stock availability in real-time, persists the order in the database, and generates the Mercado Pago preference link for the customer.
+### 💳 Checkout & Webhook Flow
+* **Preference Creation:** Valida a disponibilidade de estoque em tempo real, persiste o pedido no banco de dados e gera o link de preferência do **Mercado Pago** para o cliente.
+* **External Sync:** Um listener inteligente de **Webhook** lida com notificações assíncronas, atualizando pedidos para `PAID`, registrando metadados de pagamento e acionando a limpeza automática do carrinho.
+* **Stock Management:** Verificações rigorosas de concorrência evitam overselling durante sessões de checkout de alto tráfego.
 
-External Sync: An intelligent Webhook listener handles asynchronous notifications, updating orders to PAID status, logging payment metadata, and triggering automated cart clearance.
+### 🔄 Event-Driven Integrity
+O sistema utiliza o `ApplicationEventPublisher` do Spring para manter a consistência interna sem acoplamento rígido.
+* **Exemplo:** Quando um produto é deletado por um admin, um evento interno é disparado para atualizar ou remover automaticamente esse item de todos os carrinhos ativos.
 
-Stock Management: Strict concurrency checks prevent overselling during high-traffic checkout sessions.
+### 📁 Advanced File Handling
+* **Security:** Uploads de imagens de produtos são renomeados com **UUIDs** para eliminar colisões de nomes e prevenir ataques de traversal de diretórios.
+* **Automation:** Criação dinâmica de diretórios no servidor garante gestão de ativos contínua, mesmo em ambientes recém-configurados.
 
-🔄 Event-Driven Integrity
-The system utilizes Spring's ApplicationEventPublisher to maintain internal consistency without tightly coupling services.
-
-Example: When a product is deleted by an admin, an internal event is fired to automatically update or remove that item from all active customer shopping carts.
-
-📁 Advanced File Handling
-Security: All product image uploads are renamed using UUIDs to eliminate filename collisions and prevent directory traversal attacks.
-
-Automation: Features dynamic directory creation on the host server to ensure seamless asset management even in fresh environments.
 
 ```
 
