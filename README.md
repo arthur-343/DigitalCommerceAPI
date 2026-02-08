@@ -50,23 +50,35 @@ Image uploads with UUIDs to avoid collisions.
 
 Dynamic directory creation on server.
 
-📖 API Endpoints Summary
-Method	Endpoint	Description	Role
-POST	/api/auth/signup	User/Admin registration with CPF validation	Public
-POST	/api/auth/signin	JWT Authentication & Role-based access	Public
-GET	/api/public/products	Product catalog with search, pagination, sorting	Public
-POST	/api/admin/products	Add product with image upload	ADMIN
-POST	/api/carts/products/{id}/{qty}	Add/Update cart items with stock check	USER
-POST	/api/orders/create-preference/{id}	Start checkout & save attempt	USER
-POST	/api/webhooks/mercadopago	Async payment status listener & auditor	Internal
+Method,Endpoint,Description,Role
+
+## 📖 API Endpoints Summary
+
+| Method | Endpoint | Description | Role |
+| :--- | :--- | :--- | :--- |
+| **POST** | `/api/auth/signup` | User/Admin registration with CPF validation. | Public |
+| **POST** | `/api/auth/signin` | JWT Authentication & Role-based access. | Public |
+| **GET** | `/api/public/products` | Catalog with search, pagination, and sorting. | Public |
+| **POST** | `/api/admin/products` | Add new product with image upload (UUID). | `ADMIN` |
+| **PUT** | `/api/admin/products/{id}` | Update product details and stock. | `ADMIN` |
+| **POST** | `/api/carts/products/{id}/{qty}` | Add/Update cart items with stock check. | `USER` |
+| **GET** | `/api/carts/users/getCart` | Retrieve the current user's shopping cart. | `USER` |
+| **POST** | `/api/orders/create-preference/{id}` | Start checkout & log attempt to DB. | `USER` |
+| **GET** | `/api/orders/user` | View personal purchase history (Paid/Failed). | `USER` |
+| **POST** | `/api/webhooks/mercadopago` | Async payment listener & auditor. | Internal |
 🔧 Environment Setup
-Create a .env file or update application.properties:
+Create a .env file or update application.properties with the following variables:
 
-config.integrations.mercadopago.access-token: Your Mercado Pago credentials
+ini
+# 🔑 Mercado Pago Integration
+config.integrations.mercadopago.access-token=YOUR_MERCADO_PAGO_TOKEN
 
-config.integrations.webhook.base-url: Public URL (use Ngrok for local testing)
+# 🌐 Webhook Base URL (use Ngrok for local testing)
+config.integrations.webhook.base-url=https://your-public-url.com
 
-config.paths.image-upload: Path for storing product images
+# 🖼️ Image Upload Path
+config.paths.image-upload=/path/to/product/images
+
 
 👨‍💻 Developed by
 Arthur – Backend Engineer dedicated to building high-availability, mission-critical systems.
